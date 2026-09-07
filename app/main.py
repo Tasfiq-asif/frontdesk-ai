@@ -1,19 +1,13 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
 
 from app.config import get_settings
+from app.db import session_factory
+from app.health import HealthReport, build_report
+from app.redis import redis_client
 
 app = FastAPI(title="Frontdesk", version=get_settings().version)
 
 
-class HealthReport(BaseModel):
-    status: str
-    postgres: bool
-    redis: bool
-    version: str
-
-
 @app.get("/health")
 async def health() -> HealthReport:
-    settings = get_settings()
-    return HealthReport(status="ok", postgres=True, redis=True, version=settings.version)
+    return await build_report(session_factory, redis_client, get_settings().version)
