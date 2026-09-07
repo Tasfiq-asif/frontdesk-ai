@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Models — downloaded at build time, never committed
+models/
+*.onnx
+*.bin
+*.pt
+*.safetensors
+
+# Uploaded documents and generated audio
+storage/
+*.wav
+
+# Node
+node_modules/
+web/dist/
+
+# OS
+.DS_Store
