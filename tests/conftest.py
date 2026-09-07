@@ -5,9 +5,9 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 os.environ.setdefault(
-    "DATABASE_URL", "postgresql+psycopg://frontdesk:frontdesk@localhost:5433/frontdesk"
+    "DATABASE_URL", "postgresql+psycopg://frontdesk:frontdesk@localhost:5438/frontdesk"
 )
-os.environ.setdefault("REDIS_URL", "redis://localhost:6380/0")
+os.environ.setdefault("REDIS_URL", "redis://localhost:6382/0")
 
 
 @pytest.fixture

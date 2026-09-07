@@ -288,8 +288,8 @@ def get_settings() -> Settings:
 
 ```
 # .env.example
-DATABASE_URL=postgresql+psycopg://frontdesk:frontdesk@localhost:5433/frontdesk
-REDIS_URL=redis://localhost:6380/0
+DATABASE_URL=postgresql+psycopg://frontdesk:frontdesk@localhost:5438/frontdesk
+REDIS_URL=redis://localhost:6382/0
 ```
 
 - [ ] **Step 4: Run the tests**
@@ -331,9 +331,9 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 os.environ.setdefault(
-    "DATABASE_URL", "postgresql+psycopg://frontdesk:frontdesk@localhost:5433/frontdesk"
+    "DATABASE_URL", "postgresql+psycopg://frontdesk:frontdesk@localhost:5438/frontdesk"
 )
-os.environ.setdefault("REDIS_URL", "redis://localhost:6380/0")
+os.environ.setdefault("REDIS_URL", "redis://localhost:6382/0")
 
 
 @pytest.fixture
@@ -412,10 +412,13 @@ git commit -m "Add FastAPI app with health endpoint"
 
 **Interfaces:**
 - Consumes: `app.main:app` from Task 3
-- Produces: `postgres` on host port 5433, `redis` on host port 6380, `api` on 8000
+- Produces: `postgres` on host port 5438, `redis` on host port 6382, `api` on 8000
 
 Host ports are deliberately non-default so this project cannot collide with another Postgres
-or Redis already running on the machine.
+or Redis already running on the machine. As of 2026-09-08 this machine already had six
+Postgres containers (5432 starlyn, 5433 step-smile, 5434 merch-mvp, 5435 merch-ai,
+5436 splitbill, 5437 mountain-nest) and two Redis (6380 step-smile, 6381 splitbill), so
+Frontdesk takes 5438 and 6382. **step-smile is live client work — never take a port from it.**
 
 - [ ] **Step 1: Write the Dockerfile**
 
@@ -465,7 +468,7 @@ services:
       POSTGRES_PASSWORD: frontdesk
       POSTGRES_DB: frontdesk
     ports:
-      - "5433:5432"
+      - "5438:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -477,7 +480,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6380:6379"
+      - "6382:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -981,20 +984,20 @@ jobs:
           POSTGRES_USER: frontdesk
           POSTGRES_PASSWORD: frontdesk
           POSTGRES_DB: frontdesk
-        ports: ["5433:5432"]
+        ports: ["5438:5432"]
         options: >-
           --health-cmd "pg_isready -U frontdesk"
           --health-interval 5s --health-timeout 3s --health-retries 10
       redis:
         image: redis:7-alpine
-        ports: ["6380:6379"]
+        ports: ["6382:6379"]
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s --health-timeout 3s --health-retries 10
 
     env:
-      DATABASE_URL: postgresql+psycopg://frontdesk:frontdesk@localhost:5433/frontdesk
-      REDIS_URL: redis://localhost:6380/0
+      DATABASE_URL: postgresql+psycopg://frontdesk:frontdesk@localhost:5438/frontdesk
+      REDIS_URL: redis://localhost:6382/0
 
     steps:
       - uses: actions/checkout@v4
