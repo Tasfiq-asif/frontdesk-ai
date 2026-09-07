@@ -43,6 +43,9 @@ select = ["E", "F", "I", "UP", "B", "ASYNC"]
 [tool.mypy]
 python_version = "3.12"
 files = ["app", "tests"]
+# Required so mypy understands that BaseSettings fields come from the environment
+# and are therefore not required __init__ arguments.
+plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
 module = "app.*"
