@@ -330,7 +330,9 @@ from collections.abc import AsyncIterator
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://frontdesk:frontdesk@localhost:5433/frontdesk")
+os.environ.setdefault(
+    "DATABASE_URL", "postgresql+psycopg://frontdesk:frontdesk@localhost:5433/frontdesk"
+)
 os.environ.setdefault("REDIS_URL", "redis://localhost:6380/0")
 
 

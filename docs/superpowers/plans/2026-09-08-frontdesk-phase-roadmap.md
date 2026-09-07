@@ -589,6 +589,7 @@ action the caller did not confirm.
 class Tool(Protocol):
     name: str
     args_model: type[BaseModel]
+
     async def run(self, session, args: BaseModel) -> ToolResult: ...
 ```
 
