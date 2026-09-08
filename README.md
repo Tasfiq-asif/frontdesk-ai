@@ -22,7 +22,7 @@ displayed live.
 
 ## Stack
 
-Python 3.12 · FastAPI · LangGraph · PostgreSQL + pgvector · Redis · arq · sentence-transformers
+Python 3.14 · FastAPI · LangGraph · PostgreSQL + pgvector · Redis · arq · sentence-transformers
 · scikit-learn · PyTorch · faster-whisper · Piper · Docker Compose · Caddy
 
 ## Documentation

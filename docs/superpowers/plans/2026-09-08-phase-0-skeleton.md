@@ -11,7 +11,7 @@ passes CI — before a single feature exists.
 PostgreSQL and Redis, backed by Docker Compose. Health-check logic lives in a pure module
 taking injected dependencies, so the failure path is unit-testable without stopping containers.
 
-**Tech Stack:** Python 3.12, uv, FastAPI, Pydantic v2, pydantic-settings, SQLAlchemy 2.0
+**Tech Stack:** Python 3.14, uv, FastAPI, Pydantic v2, pydantic-settings, SQLAlchemy 2.0
 (async, psycopg3), Alembic, redis-py, PostgreSQL 16 + pgvector, pytest, pytest-asyncio, httpx,
 ruff, mypy, Docker Compose, GitHub Actions.
 
@@ -20,8 +20,8 @@ ruff, mypy, Docker Compose, GitHub Actions.
 
 ## Global Constraints
 
-- **Python 3.12**, pinned in `.python-version` and the Dockerfile so laptop, CI and VPS resolve
-  identically. A conservative preference, not a requirement — see the roadmap's constraints.
+- **Python 3.14**, pinned in `.python-version` and the Dockerfile so laptop, CI and VPS resolve
+  identically. (Phase 0 was originally built on 3.12 and moved to 3.14 the same day.)
 - **`make check` runs ruff, mypy (strict on `app/`) and pytest.** CI runs the same plus a
   Docker build.
 - **No ML dependencies in this phase.** Phase 1 adds `sentence-transformers` and friends;
@@ -47,7 +47,7 @@ whole point of the phase.
 | File | Responsibility |
 |---|---|
 | `pyproject.toml` | Dependencies, ruff and mypy config, pytest config |
-| `.python-version` | Pins 3.12 for uv |
+| `.python-version` | Pins 3.14 for uv |
 | `Makefile` | `up`, `down`, `check`, `test`, `lint`, `typecheck`, `migrate` |
 | `app/config.py` | `Settings` — every env var declared in one place |
 | `app/main.py` | FastAPI app and the `/health` route |
@@ -57,7 +57,7 @@ whole point of the phase.
 | `alembic.ini`, `migrations/env.py` | Migration harness |
 | `migrations/versions/0001_enable_pgvector.py` | `CREATE EXTENSION vector` |
 | `docker-compose.yml` | postgres, redis, api |
-| `Dockerfile` | Python 3.12 image |
+| `Dockerfile` | Python 3.14 image |
 | `.github/workflows/ci.yml` | lint, types, tests, docker build |
 | `tests/` | One test module per app module |
 
@@ -97,7 +97,7 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'app'`
 [project]
 name = "frontdesk"
 version = "0.1.0"
-requires-python = "==3.12.*"
+requires-python = "==3.14.*"
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
@@ -127,13 +127,13 @@ packages = ["app"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC"]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.14"
 files = ["app", "tests"]
 
 [[tool.mypy.overrides]]
@@ -157,7 +157,7 @@ __version__ = "0.1.0"
 
 ```
 # .python-version
-3.12
+3.14
 ```
 
 ```makefile
@@ -424,7 +424,7 @@ Frontdesk takes 5438 and 6382. **step-smile is live client work — never take a
 
 ```dockerfile
 # Dockerfile
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 

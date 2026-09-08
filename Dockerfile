@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # uv is installed with pip rather than copied from ghcr.io/astral-sh/uv: one fewer registry
 # to authenticate against, and a stale ghcr credential in a developer's docker config makes

@@ -77,7 +77,7 @@ a number a reviewer can check.
 
 Copied from the spec. Changing one is a spec change, not an implementation decision.
 
-- **Python 3.12**, pinned in Docker. Embeddings 384-dim, L2-normalized, `bge-small-en-v1.5`.
+- **Python 3.14**, pinned in Docker. Embeddings 384-dim, L2-normalized, `bge-small-en-v1.5`.
 - Chunks ~800 tokens, 120 overlap, heading-aware. RRF fusion k=60; reranker over the top 20.
 - Latency target: **under 2.5s** median, end-of-speech to first audio.
 - Intent classifier: **p95 under 15ms**, 9 labels, selection by macro-F1 subject to that budget.
@@ -88,15 +88,14 @@ Copied from the spec. Changing one is a spec change, not an implementation decis
 
 ## Local environment
 
-**Python 3.12** is pinned in `.python-version` and the Dockerfile so the laptop, CI and the
-VPS resolve identically. It is a conservative preference, **not a requirement**: verified
-2026-09-08 that torch, ctranslate2, onnxruntime, numpy, scipy and scikit-learn all publish
-cp314 wheels, and tokenizers and safetensors ship abi3, so the full ML stack installs on
-3.14. An earlier version of this document claimed 3.14 lacked wheels; that was untested and
-wrong.
+**Python 3.14** is pinned in `.python-version` and the Dockerfile so the laptop, CI and the VPS
+resolve identically. It matches the host's system Python, so there is no interpreter mismatch to
+work around: `uv sync` and `uv run` need no flags.
 
-The host machine runs 3.14. `uv` reads `.python-version`, downloads 3.12 and uses it
-automatically — `uv sync` and `uv run` need no flags.
+Verified 2026-09-08 before the switch: numpy, scipy, scikit-learn, pandas, onnxruntime and
+ctranslate2 all install and import on 3.14 from cp314 wheels; tokenizers and safetensors ship
+abi3. If a future dependency has no 3.14 wheel, that is a real signal — check before working
+around it.
 
 ## Conventions
 

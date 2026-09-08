@@ -13,7 +13,7 @@ retrieval pipeline, with every model except answer generation running locally on
 Each phase adds one horizontal capability to a system that already runs end to end, so the
 deployment path is proven on day 1 rather than day 11.
 
-**Tech Stack:** Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.0 + Alembic, PostgreSQL 16 +
+**Tech Stack:** Python 3.14, FastAPI, Pydantic v2, SQLAlchemy 2.0 + Alembic, PostgreSQL 16 +
 pgvector, Redis, arq, LangGraph, OpenRouter, sentence-transformers (`bge-small-en-v1.5`),
 `ms-marco-MiniLM-L-6-v2` cross-encoder, scikit-learn, PyTorch (CPU), faster-whisper, Silero
 VAD, Piper, Vite + Tailwind + TypeScript, Docker Compose, Caddy, GitHub Actions.
@@ -25,9 +25,9 @@ VAD, Piper, Vite + Tailwind + TypeScript, Docker Compose, Caddy, GitHub Actions.
 Every phase's requirements implicitly include all of these. Values are copied verbatim from
 the spec; changing one is a spec change, not an implementation decision.
 
-- **Python 3.12**, pinned in `.python-version` and the Dockerfile so laptop, CI and VPS resolve
-  identically. A conservative preference, not a requirement — the ML stack has full cp314 wheel
-  coverage as of 2026-09-08 (an earlier claim to the contrary here was untested and wrong).
+- **Python 3.14**, pinned in `.python-version` and the Dockerfile so laptop, CI and VPS resolve
+  identically. Moved from 3.12 on 2026-09-08 after verifying the compiled ML stack installs and
+  imports on it.
 - **Embeddings are 384-dimensional**, L2-normalized, from `BAAI/bge-small-en-v1.5`.
 - **Chunks are ~800 tokens with 120 overlap**, respecting heading boundaries.
 - **Fusion is reciprocal rank fusion with k=60**; the reranker scores the **top 20**.
@@ -106,7 +106,7 @@ runs, so no phase ever has to ask "will this deploy?"
 | File | Responsibility |
 |---|---|
 | `docker-compose.yml` | Five services: api, worker, postgres, redis, caddy |
-| `Dockerfile` | Python 3.12 image, `uv`-installed dependencies |
+| `Dockerfile` | Python 3.14 image, `uv`-installed dependencies |
 | `pyproject.toml` / `uv.lock` | Dependency manifest and lock |
 | `app/config.py` | `Settings` via pydantic-settings; all env vars declared in one place |
 | `app/db.py` | Async engine, session factory, `get_session` dependency |
