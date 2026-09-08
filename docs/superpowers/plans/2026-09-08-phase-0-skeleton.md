@@ -20,8 +20,8 @@ ruff, mypy, Docker Compose, GitHub Actions.
 
 ## Global Constraints
 
-- **Python 3.12**, pinned in Docker and in `.python-version`. The host runs 3.14, which lacks
-  wheels for the ML stack added in Phase 1.
+- **Python 3.12**, pinned in `.python-version` and the Dockerfile so laptop, CI and VPS resolve
+  identically. A conservative preference, not a requirement — see the roadmap's constraints.
 - **`make check` runs ruff, mypy (strict on `app/`) and pytest.** CI runs the same plus a
   Docker build.
 - **No ML dependencies in this phase.** Phase 1 adds `sentence-transformers` and friends;

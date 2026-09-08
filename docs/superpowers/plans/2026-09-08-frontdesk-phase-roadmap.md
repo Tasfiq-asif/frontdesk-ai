@@ -25,8 +25,9 @@ VAD, Piper, Vite + Tailwind + TypeScript, Docker Compose, Caddy, GitHub Actions.
 Every phase's requirements implicitly include all of these. Values are copied verbatim from
 the spec; changing one is a spec change, not an implementation decision.
 
-- **Python 3.12**, pinned in Docker. The host machine runs 3.14, which lacks wheels for parts
-  of the ML stack. The Dockerfile is the source of truth; local work uses `uv venv --python 3.12`.
+- **Python 3.12**, pinned in `.python-version` and the Dockerfile so laptop, CI and VPS resolve
+  identically. A conservative preference, not a requirement — the ML stack has full cp314 wheel
+  coverage as of 2026-09-08 (an earlier claim to the contrary here was untested and wrong).
 - **Embeddings are 384-dimensional**, L2-normalized, from `BAAI/bge-small-en-v1.5`.
 - **Chunks are ~800 tokens with 120 overlap**, respecting heading boundaries.
 - **Fusion is reciprocal rank fusion with k=60**; the reranker scores the **top 20**.

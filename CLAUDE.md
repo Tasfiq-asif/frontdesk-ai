@@ -88,15 +88,15 @@ Copied from the spec. Changing one is a spec change, not an implementation decis
 
 ## Local environment
 
-The host machine runs **Python 3.14**, which has no wheels for parts of the ML stack. Docker
-pins 3.12 and is the source of truth. Locally:
+**Python 3.12** is pinned in `.python-version` and the Dockerfile so the laptop, CI and the
+VPS resolve identically. It is a conservative preference, **not a requirement**: verified
+2026-09-08 that torch, ctranslate2, onnxruntime, numpy, scipy and scikit-learn all publish
+cp314 wheels, and tokenizers and safetensors ship abi3, so the full ML stack installs on
+3.14. An earlier version of this document claimed 3.14 lacked wheels; that was untested and
+wrong.
 
-```
-uv venv --python 3.12
-```
-
-Installing into the system 3.14 fails partway through `sentence-transformers` or `torch`, after
-a long download, and the failure looks like a broken package rather than a wrong interpreter.
+The host machine runs 3.14. `uv` reads `.python-version`, downloads 3.12 and uses it
+automatically — `uv sync` and `uv run` need no flags.
 
 ## Conventions
 

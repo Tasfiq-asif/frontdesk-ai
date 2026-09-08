@@ -131,9 +131,11 @@ playback runs through a Web Audio queue that can be flushed instantly for barge-
 
 ### Runtime environment
 
-Python 3.12 pinned in Docker. The author's local machine runs 3.14, which does not yet
-have wheels for parts of the ML stack — local development uses a 3.12 virtualenv managed
-by `uv`, and the Dockerfile is the source of truth.
+Python 3.12 pinned in `.python-version` and the Dockerfile, so the laptop, CI and the VPS all
+resolve to the same interpreter. This is a conservative preference rather than a requirement:
+checked on 2026-09-08, the whole ML stack publishes cp314 wheels (`tokenizers` and
+`safetensors` ship abi3), so 3.14 would work too. **Corrected 2026-09-08** — this section
+previously asserted that 3.14 lacked wheels, which was never tested and is false.
 
 ---
 
