@@ -32,6 +32,11 @@ the spec; changing one is a spec change, not an implementation decision.
 - **Chunks are ~800 tokens with 120 overlap**, respecting heading boundaries.
 - **Fusion is reciprocal rank fusion with k=60**; the reranker scores the **top 20**.
 - **Latency target: under 2.5 seconds** median from end-of-speech to first audio byte.
+- **Latency is measured only on target-class hardware** — the VPS, or a CI runner as its
+  proxy. Development happens on an M1 Max with 64GB, several times faster than the 4 vCPU
+  deploy target; a number measured there is a development figure and never decides anything.
+- **Images are built in CI for the VPS's architecture** and pulled by the VPS. The development
+  machine builds `arm64`, which will not start on an `x86_64` host.
 - **Intent classifier: p95 inference under 15ms**, 9 labels, selection by macro-F1 subject to
   that budget.
 - **Hosted-LLM spend is capped daily in Redis.** Exceeding the cap degrades to local-only
@@ -64,6 +69,24 @@ if the two weeks ended at any phase boundary, there is something honest to show.
 Phases 5 and 6 interleave on purpose: the tuning cycle (6a, day 10) runs **before** the
 deploy (5c, day 11), because you deploy the tuned system rather than tuning in production.
 The final evidence pass (6b, day 12) runs last so its numbers come from production hardware.
+
+### If time runs short
+
+Added 2026-09-10. The code is written by hand by the author rather than generated — the right
+trade for the goal, since an interviewer probes the parts you built, and slower than the
+original 70-hour estimate assumed. So the cut order is decided now rather than discovered on
+day 10. Cut from the top:
+
+1. **The fine-tuning stretch.** Never started before Phase 3 is done.
+2. **Slice 4c barge-in.** The loop works without it; a turn-taking demo is still a demo.
+3. **Slice 5b admin upload.** The two seeded corpora carry the demo on their own.
+4. **All of Phase 4.** Ship Phases 0–3 as a deployed text agent with its eval, CI gate and
+   `/stats` page. That is a complete RAG-and-ML project, and a half-working voice loop is
+   worth less than none.
+
+**Never cut:** the Phase 2 harness and its CI gate, the budget guard, the refusal guard, the
+intent classifier's four-model comparison, and a live deploy. Those are the evidence; the rest
+is product.
 
 ### Dependency graph
 
@@ -238,6 +261,7 @@ where tuning pays most — and you cannot tune what you cannot measure.
 | `eval/retrieval.py` | The runner |
 | `eval/report.py` | JSON result + markdown diff against the previous run |
 | `eval/results/` | Committed history |
+| `eval/baseline.json` | The numbers CI gates against; moved only by a commit that says why |
 
 ## Interfaces produced
 
@@ -267,12 +291,20 @@ retrieve(session, business_id: str, query: str, *, top_k: int = 5) -> RetrievalR
 - [ ] **Sabotage test:** with the retriever replaced by one returning random chunks, the
       metrics collapse toward zero. A harness that still reports a good number on a broken
       retriever is measuring nothing.
+- [ ] **The retrieval eval gates CI.** Every push runs `make eval-retrieval` against
+      `eval/baseline.json` and fails the build if hit@5 or MRR falls more than 0.02 below it.
+      Retrieval needs no LLM, so the gate costs nothing and is deterministic enough to trust;
+      model weights are cached between CI runs. Added 2026-09-10 — an eval that only runs when
+      someone remembers to run it is a report, not a safeguard.
 
 ## The trap in this phase
 
 An evaluation harness that cannot fail — which is worse than no harness, because it converts
 an unknown into a false assurance. The sabotage test above is the deliberate guard against it,
 and it is an exit criterion rather than a nice-to-have.
+
+The CI gate has a quiet failure of its own: a baseline lowered in the same commit that caused
+the regression. Baseline changes get their own commit, with the reason in the message.
 
 ---
 
@@ -346,6 +378,12 @@ Budget.check_and_reserve(estimated_usd: float) -> None   # raises BudgetExceeded
       never returns
 - [ ] `make eval` now reports answer faithfulness and refusal accuracy alongside Phase 2's
       retrieval metrics
+- [ ] **The judge is calibrated before it is trusted.** Score ~20 answers by hand, have the
+      judge score the same 20, and record agreement in `eval/judge_calibration.md`. Below 85%
+      agreement the judge is replaced — the rubric is not loosened to fit it. The judge's model
+      id is written into every results file, and it is never the generating model. A local
+      model via Ollama is a legitimate candidate: judging is a narrow comparison task, and a
+      free judge is one that gets run after every change.
 
 ### The trap in this slice
 
@@ -374,6 +412,7 @@ the finding goes in the README and the classifier goes in the bin — see bounda
 | File | Responsibility |
 |---|---|
 | `data/intents.csv` | ~1,200 labeled utterances, LLM-seeded and **hand-corrected** |
+| `ml/relabel.py` | Blind second labelling by an independent local model; writes `data/label_disagreements.csv` for hand review |
 | `ml/preprocess.py` | The single `preprocess()` used by both training and inference |
 | `ml/dataset.py` | Stratified 70/15/15 splits, class-balance report |
 | `ml/train.py` | Trains and compares all four candidates |
@@ -409,6 +448,12 @@ Intent = Literal["greeting","hours","location","pricing","booking",
 - [ ] **The selection rule is enforced in code**: best macro-F1 among models whose p95
       inference latency is under 15ms. The script *fails* if the winner exceeds the budget —
       a constraint that only lives in prose is not a constraint.
+- [ ] **The p95 that selects the model is measured in CI**, not on the development machine —
+      see Global Constraints. The laptop figure may be recorded beside it, labelled as such.
+- [ ] **Dual labelling.** The dataset is generated by a hosted model, then relabelled blind by
+      a local one. Every row where the two disagree is decided by hand, and the disagreement
+      rate is reported in `comparison.md`. Hosted for generation because diversity is the
+      quality axis of a training set; local for the second opinion because independence is.
 - [ ] A test asserts that training and inference use the **same `preprocess` function object**
       (import identity), closing the preprocessing-drift trap
 - [ ] A greeting turn completes with an LLM call count of **exactly 0** — asserted on a
@@ -420,7 +465,7 @@ Intent = Literal["greeting","hours","location","pricing","booking",
 
 ### The trap in this slice
 
-Two, both silent:
+Three, all silent:
 
 **Mislabeled generated data.** The model learns the labeller's mistakes, and the test set
 contains the same mistakes, so nothing disagrees and every metric looks healthy. The
@@ -429,6 +474,11 @@ hand-correction pass is mandatory; the error analysis is where it surfaces or do
 **Preprocessing drift.** Normalisation applied during training and forgotten at serving keeps
 test accuracy perfect while production accuracy collapses, and raises no exception. The import
 -identity test is the guard.
+
+**Mode-collapsed generated data.** 1,200 rows can hold forty real phrasings with words swapped.
+Train and test then share the same forty, and macro-F1 is excellent and meaningless. Measure it:
+report the share of utterance pairs above 0.9 cosine similarity before training, and treat a
+high share as a dataset bug rather than a strong result.
 
 ---
 
@@ -633,15 +683,23 @@ Survive the open internet on 4 vCPU.
 
 ### Modules created
 
-`Caddyfile`, `app/middleware/ratelimit.py`, `app/middleware/concurrency.py`, `docs/DEPLOY.md`.
+`Caddyfile`, `app/middleware/ratelimit.py`, `app/middleware/concurrency.py`, `docs/DEPLOY.md`,
+`loadtest/voice_load.py` (asyncio + `websockets`, replaying recorded utterances), and a CI job
+that builds the image for the VPS's architecture and pushes it to a registry.
 
 ### Exit criteria
 
 - [ ] A live HTTPS URL a stranger can open
 - [ ] The 4th voice session from one IP within an hour is refused with a friendly message — tested
 - [ ] The 3rd concurrent voice session is routed to text mode with an honest explanation — tested
-- [ ] Load sanity check: 3 concurrent sessions on the VPS, no OOM, peak RSS recorded in
-      `docs/DEPLOY.md`
+- [ ] **The concurrency ceiling is measured, not assumed.** `loadtest/voice_load.py` ramps
+      concurrent voice sessions on the VPS until median latency passes 2.5s or memory passes
+      85%. The ceiling, peak RSS and the latency-versus-sessions curve go in `docs/DEPLOY.md`,
+      and the concurrency semaphore is set from that measurement — the spec's 2 is a working
+      assumption until then. Replaces the original "3 sessions, no OOM" check, which could only
+      pass or fail and never said where the edge was.
+- [ ] The VPS runs an image that CI built for its architecture and pushed — never one built on
+      the development machine
 
 ---
 
@@ -686,8 +744,47 @@ Make the engineering legible to someone who will never run the code.
 - [ ] The cost table — cost per conversation, and what it would be without local inference
 - [ ] The scope-cut list, with reasons
 - [ ] A 90-second demo video
+- [ ] **A public `/stats` page** aggregating the `turns` table — p50 and p95 per stage, cost
+      per conversation, share of turns served by the fast path — so a reader can check the
+      README's numbers instead of trusting them. Aggregates only: no transcript text is ever
+      exposed.
 - [ ] **All five success criteria from the spec verifiably true**, each with the command or
       link that demonstrates it
+
+---
+
+# Stretch — Fine-tuning the embedder
+
+**Only after Phases 0–3 are done.** Added 2026-09-10, because the development machine (M1 Max,
+64GB, MPS) makes it cheap, and because it fills the one gap in the project's ML story: seven
+models are used as-is and one is trained from scratch, but none is fine-tuned.
+
+## Goal
+
+Adapt `bge-small-en-v1.5` to the two seeded domains, and show with the Phase 2 harness whether
+it moved retrieval — including if the answer is no.
+
+## Method
+
+Generate (question, passage) pairs from the corpus with a hosted model, fine-tune with
+sentence-transformers' `MultipleNegativesRankingLoss` on MPS, re-embed the corpus, and rerun
+`make eval-retrieval`. Same 384 dimensions and the same latency, so nothing downstream changes.
+
+## Exit criteria
+
+- [ ] A before/after table — hit@1, hit@5 and MRR for the base and fine-tuned models
+- [ ] **No leakage:** every generated training question is checked against `eval/golden.yaml`,
+      and anything above 0.9 cosine similarity to a golden question is dropped before training
+- [ ] One corpus is held out of training entirely, so the table shows whether the gain
+      transfers or was memorised
+- [ ] The fine-tuned model ships only if it wins on the held-out corpus. If it does not, the
+      negative result goes in the README and the base model stays
+
+## The trap
+
+Leakage. Training questions generated from the passages the golden set asks about will lift
+recall on the golden set and nowhere else, and the table will look like a triumph. The
+held-out corpus is what tells the two apart.
 
 ---
 
@@ -715,3 +812,11 @@ Checked each spec section against a phase. Coverage:
 No spec requirement is unassigned. Two gaps found and closed while writing this: the guard
 threshold had no owner and is now chosen from data in Phase 2 rather than guessed in Phase 3;
 and `preprocess()` was implicit, and is now an explicit shared module with an identity test.
+
+### Amended 2026-09-10
+
+Added after reviewing the plan against mid-level rather than junior expectations: the CI eval
+gate (2), judge calibration (3a), dual labelling and CI-measured latency (3b), a measured
+concurrency ceiling and CI-built images (5c), the public `/stats` page (6b), the fine-tuning
+stretch, and the cut order. None changes a spec requirement; each adds evidence that a claim
+in the spec is true.
